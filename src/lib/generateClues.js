@@ -1,35 +1,42 @@
-// src/lib/generateClues.js
-
 /**
- * Converts a numeric difficulty into a descriptive label.
+ * Generates an array of clues for a given champion using additional fields.
+ * Fields used:
+ *   - title
+ *   - tags (split by semicolon; include all available tags)
+ *   - partype
+ *   - species
+ *   - release year
+ *   - region
  */
-function getDifficultyLabel(difficulty) {
-    if (difficulty <= 3) return 'Easy';
-    else if (difficulty <= 6) return 'Medium';
-    else return 'Hard';
-  }
-  
-  /**
-   * Generates an array of clues for a given champion.
-   * Uses these data points:
-   *  - Title (champion.title)
-   *  - Primary tag (champion.tags[0])
-   *  - Resource type (champion.partype)
-   *  - Difficulty (derived from champion.info.difficulty)
-   *  - Role (we use the first tag again for this example)
-   */
-  export function generateClues(champion) {
+function generateClues(champion) {
     const clues = [];
     
-    if (champion.title) clues.push(champion.title);
-    if (champion.tags && champion.tags.length > 0) clues.push(champion.tags[0]);
-    if (champion.partype) clues.push(champion.partype);
-    if (champion.info && typeof champion.info.difficulty === 'number') {
-      clues.push(getDifficultyLabel(champion.info.difficulty));
+    if (champion.title) {
+      clues.push(champion.title);
     }
-    // Optionally add a second tag if available.
-    if (champion.tags && champion.tags.length > 1) {
-      clues.push(champion.tags[1]);
+    
+    if (champion.tags) {
+      // Split the tags by semicolon and trim each one.
+      const tagArr = champion.tags.split(';').map(s => s.trim());
+      tagArr.forEach(tag => {
+        if (tag) clues.push(tag);
+      });
+    }
+    
+    if (champion.partype) {
+      clues.push(champion.partype);
+    }
+    
+    if (champion.species) {
+      clues.push(champion.species);
+    }
+    
+    if (champion["release year"]) {
+      clues.push(champion["release year"]);
+    }
+    
+    if (champion.region) {
+      clues.push(champion.region);
     }
     
     return clues;

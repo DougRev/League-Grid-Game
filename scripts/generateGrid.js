@@ -1,81 +1,169 @@
 // scripts/generateGrid.js
-// Run this script with Node.js: e.g., `node scripts/generateGrid.js`
+// Run with: node scripts/generateGrid.js
 
 import fs from 'fs';
 import path from 'path';
-import { generateClues } from '../src/lib/generateClues.js';
-
-// Load champions.json from the project root.
-const championsFilePath = path.resolve(process.cwd(), 'champions.json');
-const championsData = JSON.parse(fs.readFileSync(championsFilePath, 'utf-8'));
-
-// Convert champion data (which is an object) into an array.
-const championsArray = Object.values(championsData.data);
+import readline from 'readline';
 
 /**
- * Selects a given number of champions from the array.
- * Here, we simply take the first `count` champions.
- * You could enhance this to randomize the selection.
+ * Simple CSV parser.
+ * Assumes a header row and that fields are separated by commas.
  */
-function selectChampions(array, count) {
-  return array.slice(0, count);
+function parseCSV(content) {
+  const lines = content.trim().split('\n');
+  const header = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const values = line.split(',').map(val => val.trim());
+    const obj = {};
+    header.forEach((key, index) => {
+      obj[key] = values[index] || '';
+    });
+    return obj;
+  });
 }
 
 /**
- * Builds the game grid and bonus champion clues.
- * - Uses 4 champions for the grid.
- * - Uses the 5th champion as the bonus champion.
+ * Generates an array of clues for a given champion using several CSV fields.
+ * Fields used: title, tags, partype, species, release year, region.
+ * Returns only unique clues for that champion.
  */
-function generateGrid() {
-  // Select 5 champions.
-  const selectedChampions = selectChampions(championsArray, 5);
+function generateClues(champion) {
+  const clues = [];
   
-  // Use the first 4 champions for the grid.
-  const gridChampions = selectedChampions.slice(0, 4);
-  // The 5th champion will be our bonus champion.
-  const bonusChampion = selectedChampions[4];
+  if (champion.title) {
+    clues.push(champion.title);
+  }
+  
+  if (champion.tags) {
+    const tagArr = champion.tags.split(';').map(s => s.trim());
+    tagArr.forEach(tag => {
+      if (tag) clues.push(tag);
+    });
+  }
+  
+  if (champion.partype) {
+    clues.push(champion.partype);
+  }
+  
+  if (champion.species) {
+    clues.push(champion.species);
+  }
+  
+  if (champion["release year"]) {
+    clues.push(champion["release year"]);
+  }
+  
+  if (champion.region) {
+    clues.push(champion.region);
+  }
+  
+  return Array.from(new Set(clues));
+}
 
-  // Generate clues for each grid champion.
-  const clueSets = gridChampions.map(champion => generateClues(champion));
-  // For simplicity, assume we use the first 4 clues from each champion.
-  const trimmedClueSets = clueSets.map(set => set.slice(0, 4));
+/**
+ * Shuffles an array in place.
+ */
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
+}
 
-  // Flatten into a single array of 16 clues.
-  const gridClues = trimmedClueSets.flat();
-
-  // Ensure uniqueness: remove duplicates.
-  const uniqueClues = Array.from(new Set(gridClues));
-
-  // If there are more than 16 unique clues, take the first 16.
-  if (uniqueClues.length < 16) {
-    console.error(`Not enough unique clues generated (${uniqueClues.length}).`);
+/**
+ * Selects 4 champions from the pool that each have at least 4 clues.
+ */
+function select4Champions(champions) {
+  const shuffled = shuffle([...champions]);
+  const selected = [];
+  for (const champ of shuffled) {
+    const clues = generateClues(champ);
+    if (clues.length >= 4) {
+      selected.push(champ);
+      if (selected.length === 4) break;
+    }
+  }
+  if (selected.length < 4) {
+    console.error("Could not find 4 champions with at least 4 clues each.");
     process.exit(1);
   }
-  const finalGridClues = uniqueClues.slice(0, 16);
-
-  // Arrange the 16 clues into a 4x4 grid.
-  const grid = [];
-  for (let i = 0; i < 4; i++) {
-    grid.push(finalGridClues.slice(i * 4, (i + 1) * 4));
-  }
-
-  // Generate bonus champion clues.
-  const bonusClues = generateClues(bonusChampion);
-
-  return { grid, gridChampions, bonusChampion, bonusClues };
+  return selected;
 }
 
-// Run the grid generation and output the result.
-const { grid, gridChampions, bonusChampion, bonusClues } = generateGrid();
+/**
+ * Builds a 4x4 grid puzzle using 4 champions.
+ * Each row is built from one champion’s clues (the first 4 clues).
+ * The solution for each row is the champion’s name.
+ */
+function generatePuzzle() {
+  const selectedChampions = select4Champions(championsArray);
+  
+  // For each champion, generate its clue set and then take the first 4 clues.
+  const grid = selectedChampions.map(champion => {
+    const clues = generateClues(champion);
+    return clues.slice(0, 4);
+  });
+  
+  // Ensure that the grid is 4x4.
+  if (grid.length !== 4 || grid.some(row => row.length !== 4)) {
+    console.error("Error: The generated grid is not 4x4.");
+    process.exit(1);
+  }
+  
+  // The solution for each row is the champion's name.
+  const solutions = selectedChampions.map(champ => champ.name);
+  
+  return { grid, solutions, gridChampions: selectedChampions };
+}
 
-console.log("Selected Grid Champions (for the 4x4 grid):");
-gridChampions.forEach(champ => console.log(`- ${champ.name}`));
+/**
+ * Prompts the user to press Enter to confirm.
+ */
+function promptConfirmation(promptText) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    rl.question(promptText, () => {
+      rl.close();
+      resolve();
+    });
+  });
+}
 
-console.log("\nGenerated 4x4 Grid of Unique Clues:");
+// Load champions.csv from the project root.
+const championsFilePath = path.resolve(process.cwd(), 'champions.csv');
+const csvContent = fs.readFileSync(championsFilePath, 'utf-8');
+const championsArray = parseCSV(csvContent);
+
+// Generate the puzzle.
+const { grid, solutions, gridChampions } = generatePuzzle();
+
+// Log detailed output.
+console.log("Selected Champions (one per row):");
+gridChampions.forEach(champ => {
+  console.log(`- ${champ.name}`);
+  console.log(`  Full Clues: ${JSON.stringify(generateClues(champ))}`);
+});
+console.log("\nGenerated 4x4 Grid of Clues (each row corresponds to one champion):");
 grid.forEach((row, index) => {
   console.log(`Row ${index + 1}:`, row);
 });
+console.log("\nRow Solutions (champion names to be revealed when solved):", solutions);
 
-console.log("\nBonus Champion:");
-console.log(`- ${bonusChampion.name}`);
-console.log("Bonus Champion's Clues:", bonusClues);
+// Build the puzzle object.
+const puzzleData = {
+  grid,            // The 4x4 grid of clues.
+  solutions,       // Array of 4 champion names (one per row).
+  gridChampions: gridChampions.map(champ => ({
+    name: champ.name,
+    clues: generateClues(champ)
+  })),
+  generatedAt: new Date().toISOString()
+};
+
+// Prompt for confirmation before writing.
+promptConfirmation("\nReview the above output. Press Enter to confirm writing the puzzle data to puzzles.json (or Ctrl+C to abort): ")
+  .then(() => {
+    const outputFilePath = path.resolve(process.cwd(), 'puzzles.json');
+    fs.writeFileSync(outputFilePath, JSON.stringify(puzzleData, null, 2), 'utf-8');
+    console.log(`\nPuzzle data successfully written to ${outputFilePath}`);
+  });

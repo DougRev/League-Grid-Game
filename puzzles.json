@@ -1,0 +1,83 @@
+{
+  "grid": [
+    [
+      "the Blade Dancer",
+      "Fighter",
+      "Assassin",
+      "Mana"
+    ],
+    [
+      "the Dark Sovereign",
+      "Mage",
+      "Mana",
+      "Human"
+    ],
+    [
+      "the Empress of the Void",
+      "Fighter",
+      "Mana",
+      "Voidborn"
+    ],
+    [
+      "the Missing Link",
+      "Fighter",
+      "Tank",
+      "Rage"
+    ]
+  ],
+  "solutions": [
+    "Irelia",
+    "Syndra",
+    "Bel'Veth",
+    "Gnar"
+  ],
+  "gridChampions": [
+    {
+      "name": "Irelia",
+      "clues": [
+        "the Blade Dancer",
+        "Fighter",
+        "Assassin",
+        "Mana",
+        "Human",
+        "2010",
+        "Ionia"
+      ]
+    },
+    {
+      "name": "Syndra",
+      "clues": [
+        "the Dark Sovereign",
+        "Mage",
+        "Mana",
+        "Human",
+        "2012",
+        "Ionia"
+      ]
+    },
+    {
+      "name": "Bel'Veth",
+      "clues": [
+        "the Empress of the Void",
+        "Fighter",
+        "Mana",
+        "Voidborn",
+        "2022",
+        "The Void"
+      ]
+    },
+    {
+      "name": "Gnar",
+      "clues": [
+        "the Missing Link",
+        "Fighter",
+        "Tank",
+        "Rage",
+        "Yordle",
+        "2014",
+        "Freljord"
+      ]
+    }
+  ],
+  "generatedAt": "2025-02-08T19:12:24.750Z"
+}
